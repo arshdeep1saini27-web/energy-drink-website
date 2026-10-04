@@ -1,0 +1,533 @@
+import { useEffect, useMemo, useState } from 'react';
+
+const PRODUCTS = [
+  {
+    id: 1,
+    name: 'Volt Rush',
+    category: 'Focus',
+    flavor: 'Citrus Burst',
+    price: 5.99,
+    rating: 4.9,
+    badge: 'Best Seller',
+    accent: '#ff7a18',
+    image:
+      'https://images.unsplash.com/photo-1546173159-315724a31696?auto=format&fit=crop&w=900&q=80',
+    description: 'Maximum alertness with a sharp citrus kick for fast-paced workdays.',
+    tags: ['Zero Sugar', 'BCAA', '12oz'],
+  },
+  {
+    id: 2,
+    name: 'Nova Pulse',
+    category: 'Energy',
+    flavor: 'Berry Charge',
+    price: 6.49,
+    rating: 4.8,
+    badge: 'New',
+    accent: '#8b5cf6',
+    image:
+      'https://images.unsplash.com/photo-1513558161293-cdaf765ed2e8?auto=format&fit=crop&w=900&q=80',
+    description: 'Smooth berry power with balanced caffeine for a clean, steady boost.',
+    tags: ['Vegan', 'No Crash', '14oz'],
+  },
+  {
+    id: 3,
+    name: 'Hydra Flux',
+    category: 'Hydration',
+    flavor: 'Lime Spark',
+    price: 5.49,
+    rating: 4.7,
+    badge: 'Recovery',
+    accent: '#06b6d4',
+    image:
+      'https://images.unsplash.com/photo-1523374228107-6ae8e6f8e0e5?auto=format&fit=crop&w=900&q=80',
+    description: 'Electrolyte-rich hydration designed to keep your momentum going.',
+    tags: ['Electrolytes', 'Low Carb', '16oz'],
+  },
+  {
+    id: 4,
+    name: 'Turbo Core',
+    category: 'Performance',
+    flavor: 'Orange Rush',
+    price: 6.99,
+    rating: 5.0,
+    badge: 'Pro',
+    accent: '#f59e0b',
+    image:
+      'https://images.unsplash.com/photo-1577805947697-89e18249d767?auto=format&fit=crop&w=900&q=80',
+    description: 'Explosive performance blend built for serious training and long sessions.',
+    tags: ['Creatine', 'Vitamins', '15oz'],
+  },
+  {
+    id: 5,
+    name: 'Peak Mist',
+    category: 'Focus',
+    flavor: 'Green Apple',
+    price: 5.79,
+    rating: 4.8,
+    badge: 'Trending',
+    accent: '#22c55e',
+    image:
+      'https://images.unsplash.com/photo-1622483767028-3f66f2b0c1d4?auto=format&fit=crop&w=900&q=80',
+    description: 'Clean mental clarity with a crisp green apple lift that keeps you sharp.',
+    tags: ['Cognitive', 'No Sugar', '12oz'],
+  },
+  {
+    id: 6,
+    name: 'Solar Strike',
+    category: 'Energy',
+    flavor: 'Mango Riot',
+    price: 6.2,
+    rating: 4.9,
+    badge: 'Weekend Fuel',
+    accent: '#ef4444',
+    image:
+      'https://images.unsplash.com/photo-1502741338009-cac2772e18bc?auto=format&fit=crop&w=900&q=80',
+    description: 'An extra-sunny tropical blend for fun, motion, and momentum everywhere.',
+    tags: ['Natural Caffeine', 'Vibrant', '14oz'],
+  },
+];
+
+const UPCOMING = [
+  {
+    name: 'Blackout Blast',
+    date: 'Launches 12 Nov',
+    flavor: 'Midnight Cola',
+    note: 'Dark, fizzy, and ultra-boosting for night-shift power.',
+  },
+  {
+    name: 'Ice Vortex',
+    date: 'Launches 22 Nov',
+    flavor: 'Frozen Kiwi',
+    note: 'Chilled, crisp, and designed for the ultimate reset.',
+  },
+  {
+    name: 'Photon Pop',
+    date: 'Launches 5 Dec',
+    flavor: 'Electric Pineapple',
+    note: 'Bright tropical energy for sprint-based lifestyles.',
+  },
+];
+
+const PAYMENT_OPTIONS = ['Card', 'UPI', 'Wallet', 'COD'];
+
+function App() {
+  const [theme, setTheme] = useState(() => localStorage.getItem('pulse-theme') || 'dark');
+  const [query, setQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [energyLevel, setEnergyLevel] = useState(72);
+  const [cart, setCart] = useState(() => {
+    const savedCart = localStorage.getItem('pulse-cart');
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
+  const [selectedPayment, setSelectedPayment] = useState('Card');
+  const [preorderForm, setPreorderForm] = useState({
+    name: '',
+    email: '',
+    drink: 'Blackout Blast',
+    quantity: '1',
+  });
+  const [statusMessage, setStatusMessage] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem('pulse-theme', theme);
+    document.body.dataset.theme = theme;
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('pulse-cart', JSON.stringify(cart));
+  }, [cart]);
+
+  const categories = ['All', 'Energy', 'Focus', 'Hydration', 'Performance'];
+
+  const filteredProducts = useMemo(() => {
+    return PRODUCTS.filter((product) => {
+      const matchesCategory = activeCategory === 'All' || product.category === activeCategory;
+      const matchesSearch =
+        product.name.toLowerCase().includes(query.toLowerCase()) ||
+        product.flavor.toLowerCase().includes(query.toLowerCase()) ||
+        product.category.toLowerCase().includes(query.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [activeCategory, query]);
+
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const shipping = cart.length ? 4.99 : 0;
+  const total = subtotal + shipping;
+
+  const addToCart = (product) => {
+    setCart((current) => {
+      const existingItem = current.find((item) => item.id === product.id);
+      if (existingItem) {
+        return current.map((item) =>
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      return [...current, { ...product, quantity: 1 }];
+    });
+  };
+
+  const updateQuantity = (id, change) => {
+    setCart((current) =>
+      current
+        .map((item) =>
+          item.id === id ? { ...item, quantity: Math.max(0, item.quantity + change) } : item
+        )
+        .filter((item) => item.quantity > 0)
+    );
+  };
+
+  const handlePreorder = (event) => {
+    event.preventDefault();
+    setStatusMessage(
+      `Pre-order request confirmed for ${preorderForm.name || 'your next boost'} — ${preorderForm.drink} (${preorderForm.quantity} pack) is on the list.`
+    );
+    setPreorderForm({
+      name: '',
+      email: '',
+      drink: 'Blackout Blast',
+      quantity: '1',
+    });
+  };
+
+  return (
+    <div className={`app ${theme}`} style={{ '--energy-level': `${energyLevel}%` }}>
+      <div className="orb orb-one" />
+      <div className="orb orb-two" />
+      <div className="orb orb-three" />
+
+      <header className="topbar container">
+        <div className="brand-wrap">
+          <div className="brand-mark">P</div>
+          <div>
+            <p className="brand-name">PulseForge</p>
+            <span className="brand-tag">Energy Lab</span>
+          </div>
+        </div>
+
+        <nav className="nav">
+          <a href="#shop">Shop</a>
+          <a href="#plans">Plans</a>
+          <a href="#preorder">Pre-order</a>
+          <a href="#checkout">Checkout</a>
+        </nav>
+
+        <div className="header-actions">
+          <button className="theme-toggle" onClick={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}>
+            {theme === 'dark' ? '☀️ Day' : '🌙 Night'}
+          </button>
+          <button className="cart-button">Cart ({totalItems})</button>
+        </div>
+      </header>
+
+      <main>
+        <section className="hero container">
+          <div className="hero-copy">
+            <p className="eyebrow">NEW FORMULA • HIGH VOLTAGE</p>
+            <h1>Fuel your next win with lightning-fast energy.</h1>
+            <p className="lead">
+              Engineer your momentum with clean ingredients, fast focus, and drinks built for athletes, creators, and every all-day sprint.
+            </p>
+
+            <div className="hero-actions">
+              <a href="#shop" className="primary-btn">Shop now</a>
+              <a href="#preorder" className="ghost-btn">Pre-order drops</a>
+            </div>
+
+            <div className="stats-row">
+              <div>
+                <strong>18k+</strong>
+                <span>Hydrated athletes</span>
+              </div>
+              <div>
+                <strong>4.9/5</strong>
+                <span>Customer rating</span>
+              </div>
+              <div>
+                <strong>12 min</strong>
+                <span>Average delivery</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="hero-visual">
+            <div className="visual-panel">
+              <div className="energy-meter">
+                <span>Energy intensity</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={energyLevel}
+                  onChange={(e) => setEnergyLevel(Number(e.target.value))}
+                />
+                <strong>{energyLevel}%</strong>
+              </div>
+
+              <div className="can-stage">
+                <div className="can-shadow" />
+                <div className="can-body">
+                  <div className="can-top" />
+                  <div className="can-label">
+                    <span>PulseForge</span>
+                    <strong>Volt Rush</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="shop" className="catalog container">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">OUR FLAVORS</p>
+              <h2>Electrify your routine.</h2>
+            </div>
+            <div className="catalog-tools">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search flavors or categories"
+              />
+            </div>
+          </div>
+
+          <div className="filter-row">
+            {categories.map((category) => (
+              <button
+                key={category}
+                className={category === activeCategory ? 'pill active' : 'pill'}
+                onClick={() => setActiveCategory(category)}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+
+          <div className="product-grid">
+            {filteredProducts.map((product) => (
+              <article key={product.id} className="product-card">
+                <div className="product-image-wrap" style={{ background: `linear-gradient(135deg, ${product.accent}, rgba(12,17,35,0.1))` }}>
+                  <div className="product-badge">{product.badge}</div>
+                  <img src={product.image} alt={product.name} />
+                </div>
+                <div className="product-info">
+                  <div className="meta-row">
+                    <span>{product.category}</span>
+                    <span>⭐ {product.rating}</span>
+                  </div>
+                  <h3>{product.name}</h3>
+                  <p className="flavor">{product.flavor}</p>
+                  <p className="description">{product.description}</p>
+                  <div className="tags">
+                    {product.tags.map((tag, index) => (
+                      <span key={`${product.id}-${index}`}>{tag}</span>
+                    ))}
+                  </div>
+                  <div className="product-actions">
+                    <strong>${product.price.toFixed(2)}</strong>
+                    <button onClick={() => addToCart(product)}>Add to cart</button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="plans" className="plans container">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">SMART SUBSCRIPTION</p>
+              <h2>Pick your power plan.</h2>
+            </div>
+          </div>
+
+          <div className="plan-grid">
+            <div className="plan-card highlight">
+              <p>Starter Boost</p>
+              <h3>$19<span>/month</span></h3>
+              <ul>
+                <li>12 cans / month</li>
+                <li>Free shipping</li>
+                <li>Early access to drops</li>
+              </ul>
+              <button>Start now</button>
+            </div>
+            <div className="plan-card">
+              <p>Performance Pack</p>
+              <h3>$34<span>/month</span></h3>
+              <ul>
+                <li>24 cans / month</li>
+                <li>Priority support</li>
+                <li>Custom hydration plan</li>
+              </ul>
+              <button>Choose pack</button>
+            </div>
+            <div className="plan-card">
+              <p>Elite Lab</p>
+              <h3>$59<span>/month</span></h3>
+              <ul>
+                <li>Unlimited flavor swaps</li>
+                <li>VIP release access</li>
+                <li>Team bundles available</li>
+              </ul>
+              <button>Go pro</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="preorder" className="preorder container">
+          <div className="preorder-copy">
+            <p className="eyebrow">COMING SOON</p>
+            <h2>Reserve the next wave before it drops.</h2>
+            <ul className="upcoming-list">
+              {UPCOMING.map((drink) => (
+                <li key={drink.name}>
+                  <div>
+                    <strong>{drink.name}</strong>
+                    <span>{drink.flavor}</span>
+                  </div>
+                  <small>{drink.date}</small>
+                  <p>{drink.note}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <form className="preorder-form" onSubmit={handlePreorder}>
+            <h3>Pre-order alert</h3>
+            <label>
+              Full name
+              <input
+                type="text"
+                value={preorderForm.name}
+                onChange={(e) => setPreorderForm({ ...preorderForm, name: e.target.value })}
+                placeholder="Alex Morgan"
+                required
+              />
+            </label>
+            <label>
+              Email
+              <input
+                type="email"
+                value={preorderForm.email}
+                onChange={(e) => setPreorderForm({ ...preorderForm, email: e.target.value })}
+                placeholder="alex@example.com"
+                required
+              />
+            </label>
+            <label>
+              Upcoming drink
+              <select
+                value={preorderForm.drink}
+                onChange={(e) => setPreorderForm({ ...preorderForm, drink: e.target.value })}
+              >
+                {UPCOMING.map((drink) => (
+                  <option key={drink.name} value={drink.name}>
+                    {drink.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Quantity
+              <input
+                type="number"
+                min="1"
+                max="12"
+                value={preorderForm.quantity}
+                onChange={(e) => setPreorderForm({ ...preorderForm, quantity: e.target.value })}
+              />
+            </label>
+            <button type="submit" className="primary-btn">Reserve my pack</button>
+            {statusMessage ? <p className="status">{statusMessage}</p> : null}
+          </form>
+        </section>
+
+        <section id="checkout" className="checkout container">
+          <div className="checkout-panel">
+            <div className="checkout-header">
+              <p className="eyebrow">CHECKOUT</p>
+              <h2>Complete your order.</h2>
+            </div>
+
+            <div className="checkout-layout">
+              <div className="payment-card">
+                <h3>Payment method</h3>
+                <div className="payment-options">
+                  {PAYMENT_OPTIONS.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      className={selectedPayment === option ? 'payment-option selected' : 'payment-option'}
+                      onClick={() => setSelectedPayment(option)}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="payment-fields">
+                  <label>
+                    Cardholder name
+                    <input type="text" placeholder="Alex Morgan" />
+                  </label>
+                  <label>
+                    Card number
+                    <input type="text" placeholder="1234 5678 9012 3456" />
+                  </label>
+                  <div className="split-fields">
+                    <label>
+                      Expiry
+                      <input type="text" placeholder="09/29" />
+                    </label>
+                    <label>
+                      CVC
+                      <input type="text" placeholder="128" />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <aside className="summary-card">
+                <h3>Order summary</h3>
+                {cart.length ? (
+                  <div className="summary-items">
+                    {cart.map((item) => (
+                      <div key={item.id} className="summary-item">
+                        <div>
+                          <strong>{item.name}</strong>
+                          <small>{item.flavor}</small>
+                        </div>
+                        <div className="summary-controls">
+                          <button onClick={() => updateQuantity(item.id, -1)}>-</button>
+                          <span>{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item.id, 1)}>+</button>
+                        </div>
+                        <span>${(item.price * item.quantity).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="empty-cart">Your cart is empty. Add a few energy boosts to get started.</p>
+                )}
+
+                <div className="totals">
+                  <div><span>Subtotal</span><strong>${subtotal.toFixed(2)}</strong></div>
+                  <div><span>Shipping</span><strong>${shipping.toFixed(2)}</strong></div>
+                  <div className="grand-total"><span>Total</span><strong>${total.toFixed(2)}</strong></div>
+                </div>
+
+                <button className="primary-btn full">Pay ${total.toFixed(2)}</button>
+              </aside>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+export default App;
